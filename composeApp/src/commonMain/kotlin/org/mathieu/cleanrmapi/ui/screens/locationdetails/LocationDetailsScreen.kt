@@ -1,8 +1,7 @@
-package org.mathieu.cleanrmapi.ui.screens.characterdetails
+package org.mathieu.cleanrmapi.ui.screens.locationdetails
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -22,9 +21,9 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.SquareFoot
+import androidx.compose.material.icons.rounded.TravelExplore
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -43,77 +42,69 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import org.mathieu.cleanrmapi.domain.character.models.CharacterGender
-import org.mathieu.cleanrmapi.domain.character.models.CharacterStatus
-import org.mathieu.cleanrmapi.domain.episode.models.Episode
-import org.mathieu.cleanrmapi.domain.location.models.LocationPreview
-import org.mathieu.cleanrmapi.ui.core.composables.Avatar
+import org.mathieu.cleanrmapi.domain.character.models.Character
 import org.mathieu.cleanrmapi.ui.core.composables.BackArrow
 import org.mathieu.cleanrmapi.ui.core.composables.IconWithImage
 import org.mathieu.cleanrmapi.ui.core.composables.Screen
-import org.mathieu.cleanrmapi.ui.core.extensions.imageVector
-import org.mathieu.cleanrmapi.ui.core.extensions.text
 import org.mathieu.cleanrmapi.ui.core.theme.PrimaryColor
 import org.mathieu.cleanrmapi.ui.core.theme.SurfaceColor
 
 @Composable
-fun CharacterDetailsScreen(
+fun LocationDetailsScreen(
     navController: NavController,
-    id: Int
+    locationId: Int,
 ) {
     Screen(
-        viewModel = viewModel { CharacterDetailsViewModel() },
-        navController = navController
-    ) { state, viewModel ->
+        viewModel = LocationDetailsViewModel(),
+        navController = navController,
+    ) {state, viewModel ->
 
-        LaunchedEffect(key1 = Unit) {
-            viewModel.init(characterId = id)
-        }
+        viewModel.init(locationId)
 
+        // Render the content of the screen
         Content(
             state = state,
-            onClickBack = navController::popBackStack,
-            onAction = viewModel::handleAction
+            onAction = viewModel::handleAction,
+            onClickBack = navController::popBackStack
         )
-
     }
 }
 
 @Composable
 private fun Content(
-    state: CharacterDetailsState = CharacterDetailsState.Loading,
-    onAction: (CharacterDetailsAction) -> Unit = { },
+    state: LocationDetailsState,
+    onAction: (LocationDetailsAction) -> Unit = { },
     onClickBack: () -> Unit = { }
-) = Box(
-    modifier = Modifier
+)
+{
+    Box(
+        modifier = Modifier
         .fillMaxSize()
         .padding(),
-    contentAlignment = Alignment.Center
-) {
+        contentAlignment = Alignment.Center
+    ) {
+        BackArrow(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .zIndex(1f),
+            onClick = onClickBack
+        )
 
-    BackArrow(
-        modifier = Modifier
-            .align(Alignment.TopStart)
-            .zIndex(1f),
-        onClick = onClickBack
-    )
-
-    Crossfade(targetState = state) {
-        when (it) {
-            is CharacterDetailsState.Error -> ErrorView(error = it.message)
-            is CharacterDetailsState.Loaded -> CharacterDetailsContent(
-                state = it,
-                onAction = onAction
-            )
-            CharacterDetailsState.Loading -> {
-                /** TODO: Could display a Loading Animation */
+        Crossfade(targetState = state) {
+            when (it) {
+                is LocationDetailsState.Error -> ErrorView(error = it.message)
+                is LocationDetailsState.Loaded -> LocationDetailsContent(
+                    state = it,
+                    onAction = onAction
+                )
+                LocationDetailsState.Loading -> {
+                    /** TODO: Could display a Loading Animation */
+                }
             }
         }
     }
 }
-
 
 @Composable
 private fun ErrorView(error: String) {
@@ -128,13 +119,12 @@ private fun ErrorView(error: String) {
     )
 }
 
-
-private object CharacterDetailsContent {
+private object LocationDetailsContent {
 
     @Composable
     operator fun invoke(
-        state: CharacterDetailsState.Loaded,
-        onAction: (CharacterDetailsAction) -> Unit
+        state: LocationDetailsState.Loaded,
+        onAction: (LocationDetailsAction) -> Unit
     ) {
 
         var offsetY by remember {
@@ -148,42 +138,35 @@ private object CharacterDetailsContent {
 
             Header(
                 state = state,
-                offsetY = offsetY,
-                onAction = onAction
+                offsetY = offsetY
             )
 
             LazyColumn {
-                itemsIndexed(state.episodes) { index, episode ->
+                itemsIndexed(state.residents) { index, resident ->
                     if (index == 0) {
-                        Box(modifier = Modifier.onGloballyPositioned { offsetY = it.positionInParent().y })
+                        Box(modifier = Modifier.onGloballyPositioned {
+                            offsetY = it.positionInParent().y
+                        })
                     }
-                    
-                    
-                    EpisodeCard(
+
+
+                    ResidentCard(
                         modifier = Modifier
                             .padding(8.dp)
                             .clickable {
-                                onAction(CharacterDetailsAction.SelectedEpisode(episode))
+                                onAction(LocationDetailsAction.SelectedResident(resident.id))
                             },
-                        episode = episode
+                        resident = resident
                     )
-
                 }
-
             }
-
         }
-
-
     }
 
-
-    @OptIn(ExperimentalFoundationApi::class)
     @Composable
     private fun Header(
-        state: CharacterDetailsState.Loaded,
-        offsetY: Float,
-        onAction: (CharacterDetailsAction) -> Unit
+        state: LocationDetailsState.Loaded,
+        offsetY: Float
     ) {
 
         val density = LocalDensity.current
@@ -195,8 +178,6 @@ private object CharacterDetailsContent {
         Box(
             modifier = Modifier.height(animatedHeight)
         ) {
-            Avatar(url = state.avatarUrl)
-
             Column(
                 modifier = Modifier
                     .background(SurfaceColor.copy(alpha = 0.3f))
@@ -217,23 +198,18 @@ private object CharacterDetailsContent {
                 )
 
                 AdditionalInfo(
-                    gender = state.gender,
-                    status = state.status,
-                    location = state.location,
-                    onAction = onAction
+                    type = state.type,
+                    dimension = state.dimension,
                 )
 
             }
         }
     }
 
-
     @Composable
     private fun AdditionalInfo(
-        gender: CharacterGender,
-        status: CharacterStatus,
-        location: LocationPreview,
-        onAction: (CharacterDetailsAction) -> Unit
+        type: String,
+        dimension: String
     ) = Row(
         modifier = Modifier
             .padding(8.dp)
@@ -241,37 +217,26 @@ private object CharacterDetailsContent {
             .height(IntrinsicSize.Max),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-
         Spacer(Modifier.width(8.dp))
 
         IconWithImage(
             modifier = Modifier.weight(1f),
-            imageVector = gender.imageVector, text = gender.text
-        )
-
-        Spacer(Modifier.width(16.dp))
-
-        IconWithImage(
-            modifier = Modifier.weight(1f).clickable(
-                onClick = { onAction(CharacterDetailsAction.SelectedLocation(location)) }
-            ),
-            imageVector = Icons.Rounded.Home, text = location.name
+            imageVector = Icons.Rounded.TravelExplore, text = type
         )
 
         Spacer(Modifier.width(16.dp))
 
         IconWithImage(
             modifier = Modifier.weight(1f),
-            imageVector = status.imageVector, text = status.text
+            imageVector = Icons.Rounded.SquareFoot, text = dimension
         )
 
         Spacer(Modifier.width(8.dp))
-
     }
 
     @Composable
-    private fun EpisodeCard(
-        modifier: Modifier, episode: Episode
+    private fun ResidentCard(
+        modifier: Modifier, resident: Character
     ) =
         Column(
             modifier = modifier
@@ -281,15 +246,13 @@ private object CharacterDetailsContent {
                 .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
 
-            Text(text = episode.airDate, fontSize = 11.sp)
+            Text(text = resident.name, fontSize = 11.sp)
 
             Text(
-                text = "${episode.episode} - ${episode.name}",
+                text = resident.species,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis, fontSize = 13.sp
             )
 
         }
-
-
 }

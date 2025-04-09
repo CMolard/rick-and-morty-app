@@ -5,11 +5,13 @@ import org.mathieu.cleanrmapi.domain.character.CharacterRepository
 import org.mathieu.cleanrmapi.domain.character.models.CharacterGender
 import org.mathieu.cleanrmapi.domain.character.models.CharacterStatus
 import org.mathieu.cleanrmapi.domain.episode.models.Episode
+import org.mathieu.cleanrmapi.domain.location.models.LocationPreview
 import org.mathieu.cleanrmapi.ui.core.Destination
 import org.mathieu.cleanrmapi.ui.core.ViewModel
 
 sealed interface CharacterDetailsAction {
     data class SelectedEpisode(val episode: Episode): CharacterDetailsAction
+    data class SelectedLocation(val location: LocationPreview): CharacterDetailsAction
 }
 
 class CharacterDetailsViewModel :
@@ -31,8 +33,8 @@ class CharacterDetailsViewModel :
                         episodes = details.episodes,
                         status = details.status,
                         gender = details.gender,
-                        origin = details.origin.name,
-                        location = details.location.name
+                        origin = details.origin,
+                        location = details.location
                     )
                 }
             }
@@ -70,8 +72,8 @@ sealed interface CharacterDetailsState {
         val episodes: List<Episode>,
         val status: CharacterStatus,
         val gender: CharacterGender,
-        val origin: String,
-        val location: String,
+        val origin: LocationPreview,
+        val location: LocationPreview,
     ) : CharacterDetailsState
 
 }

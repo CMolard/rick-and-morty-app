@@ -9,6 +9,7 @@ import org.mathieu.cleanrmapi.ui.core.composable
 import org.mathieu.cleanrmapi.ui.screens.characterdetails.CharacterDetailsScreen
 import org.mathieu.cleanrmapi.ui.screens.characters.CharactersScreen
 import org.mathieu.cleanrmapi.ui.screens.episodedetails.EpisodeDetailsScreen
+import org.mathieu.cleanrmapi.ui.screens.locationdetails.LocationDetailsScreen
 
 @Composable
 fun App() {
@@ -23,6 +24,12 @@ private fun MainContent() {
 
     val navController = rememberNavController()
 
+    /**
+     * Manage the navigation of the application.
+     *
+     * @param navController The NavController to manage the navigation.
+     * @param startDestination First destination used in the application start.
+     */
     //https://developer.android.com/jetpack/compose/navigation?hl=fr
     NavHost(navController = navController, startDestination = "characters") {
 
@@ -46,6 +53,17 @@ private fun MainContent() {
             EpisodeDetailsScreen(
                 navController = navController,
                 id = backStackEntry.arguments?.getInt("episodeId") ?: -1
+            )
+
+        }
+
+        composable(
+            destination = Destination.LocationDetails()
+        ) { backStackEntry ->
+
+            LocationDetailsScreen(
+                navController = navController,
+                locationId = backStackEntry.arguments?.getInt("locationId") ?: -1,
             )
 
         }
